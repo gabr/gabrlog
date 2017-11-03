@@ -6,21 +6,21 @@ import (
 	"os"
 )
 
-type GabrLogType string
+type TypedLogType string
 
 const (
-	LLog  GabrLogType = "LOG"
-	LWarn GabrLogType = "WARNING"
-	LErr  GabrLogType = "ERROR"
+	LLog  TypedLogType = "LOG"
+	LWarn TypedLogType = "WARNING"
+	LErr  TypedLogType = "ERROR"
 )
 
-type GabrLog struct {
+type TypedLog struct {
 	logFile     *os.File
 	LogFileInfo os.FileInfo
 	detailed    bool
 }
 
-func (gl *GabrLog) SetFile(path string) error {
+func (gl *TypedLog) SetFile(path string) error {
 	var err error
 	gl.logFile, err = os.OpenFile(
 		path,
@@ -39,7 +39,7 @@ func (gl *GabrLog) SetFile(path string) error {
 	return nil
 }
 
-func (gl *GabrLog) CloseFile() error {
+func (gl *TypedLog) CloseFile() error {
 	if gl.logFile == nil {
 		return fmt.Errorf("Log file was not set")
 	}
@@ -47,7 +47,7 @@ func (gl *GabrLog) CloseFile() error {
 	return gl.logFile.Close()
 }
 
-func (gl *GabrLog) Printf(logType GabrLogType, msg string, a ...interface{}) {
+func (gl *TypedLog) Printf(logType TypedLogType, msg string, a ...interface{}) {
 	if gl.detailed == false {
 		log.SetFlags(log.Ldate | log.Ltime | log.Lmicroseconds | log.Lshortfile)
 		gl.detailed = true
@@ -101,7 +101,7 @@ func main() {
 	}
 	log.Printf("Executable path: %q", execPath)
 
-	glog := GabrLog{}
+	glog := TypedLog{}
 	err = glog.SetFile("glog.txt")
 	if err != nil {
 		log.Fatal(err)
