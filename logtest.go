@@ -6,6 +6,60 @@ import (
 	"os"
 )
 
+type GabrLogType string
+
+const (
+	LLog  GabrLogType = "LOG"
+	LWarn GabrLogType = "WARNING"
+	LErr  GabrLogType = "ERROR"
+)
+
+type GabrLog struct {
+	logFile     *os.File
+	LogFileInfo os.FileInfo
+	detailed    bool
+}
+
+func (gl *GabrLog) SetFile(path string) error {
+	var err error
+	gl.logFile, err = os.OpenFile(
+		path,
+		os.O_WRONLY|os.O_APPEND|os.O_CREATE,
+		os.ModeAppend)
+	if err != nil {
+		return err
+	}
+
+	gl.LogFileInfo, err = gl.logFile.Stat()
+	if err != nil {
+		return err
+	}
+
+	log.SetOutput(gl.logFile)
+	return nil
+}
+
+func (gl *GabrLog) CloseFile() error {
+	if gl.logFile == nil {
+		return fmt.Errorf("Log file was not set")
+	}
+
+	return gl.logFile.Close()
+}
+
+func (gl *GabrLog) Printf(logType GabrLogType, msg string, a ...interface{}) {
+	if gl.detailed == false {
+		log.SetFlags(log.Ldate | log.Ltime | log.Lmicroseconds | log.Lshortfile)
+		gl.detailed = true
+	}
+
+	if len(a) == 0 {
+		log.Printf(fmt.Sprintf("%s %s", string(logType), msg))
+	} else {
+		log.Printf(fmt.Sprintf("%s %s", string(logType), msg), a)
+	}
+}
+
 func main() {
 	fmt.Println("Logging test")
 
@@ -13,20 +67,6 @@ func main() {
 	//log.Fatal("First log entry")
 	//log.Panicln("First log entry")
 
-	/*
-		About printing int as binary.
-
-		The '%b' makes integer to be presented as binary string.
-		But it will not show leading zeros.
-		In order to pad resulted string, the number representing
-		width has to be putted before format char: '%8b'.
-		Unfortunately the default padding (even for binary) are
-		spaces. To used '0' padding prefix the format with '0'.
-
-		Result (eight zeros padded binary format): '%08b'
-
-		The [1] is used to index the argument of Printf() function.
-	*/
 	log.Printf("Used flags: %[1]v (%08[1]bb)\n", log.Flags())
 	log.Printf("Current prefix: %q\n", log.Prefix())
 
@@ -39,7 +79,7 @@ func main() {
 
 	lfile, err := os.OpenFile(
 		"logs.txt",
-		os.O_WRONLY | os.O_APPEND | os.O_CREATE,
+		os.O_WRONLY|os.O_APPEND|os.O_CREATE,
 		os.ModeAppend)
 	if err != nil {
 		log.Fatal(err)
@@ -53,11 +93,26 @@ func main() {
 
 	log.Printf("This file will become logs output: %q", lfileInfo.Name())
 	log.SetOutput(lfile)
-	log.Printf("First log in file");
+	log.Printf("First log in file")
 
 	execPath, err := os.Executable()
 	if err != nil {
 		log.Fatal(err)
 	}
 	log.Printf("Executable path: %q", execPath)
+
+	glog := GabrLog{}
+	err = glog.SetFile("glog.txt")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer (func () {
+		err := glog.CloseFile()
+		if err != nil {
+			fmt.Println("Error while closing file:", err)
+		}
+	})()
+
+	glog.Printf(LErr, "This is an error\n")
+	glog.Printf(LErr, "This is an error with arguments %d\n", 13)
 }
