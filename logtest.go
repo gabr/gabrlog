@@ -106,7 +106,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer (func () {
+	defer (func() {
 		err := glog.CloseFile()
 		if err != nil {
 			fmt.Println("Error while closing file:", err)
